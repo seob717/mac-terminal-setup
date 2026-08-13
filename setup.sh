@@ -178,13 +178,17 @@ if [[ -f "$STARSHIP_TOML" ]]; then
   warn "기존 설정을 $STARSHIP_TOML.backup.$STAMP 로 백업했다."
 fi
 cat > "$STARSHIP_TOML" <<'TOML'
-# 디렉토리 · git · 실행 시간만 보여주는 미니멀 프롬프트.
-# 항목을 더 넣고 싶으면 https://starship.rs/config 참고.
+# 디렉토리 · git · Node · 실행 시간을 보여주는 프롬프트.
+# 아이콘은 이모지를 직접 쓰지 않고 \U 이스케이프로 적는다. 편집기나 복사 과정에서
+# 깨지지 않고, 큰따옴표 문자열에서만 해석된다(작은따옴표면 글자 그대로 나온다).
+# 끝의 \U0000FE0F는 변이 선택자로, 흑백 대신 컬러 이모지로 그리라는 표시다.
 
 format = """
 $directory\
 $git_branch\
+$git_state\
 $git_status\
+$nodejs\
 $cmd_duration\
 $line_break\
 $character"""
@@ -195,24 +199,49 @@ add_newline = true
 truncation_length = 3      # 경로가 길면 뒤 3단계만 표시
 truncate_to_repo = true    # git 저장소 안에서는 저장소 루트 기준으로 표시
 style = "bold cyan"
+read_only = " \U0001F512"  # 쓰기 불가 디렉토리
 
 [git_branch]
-# 아이콘은 글자를 직접 넣으면 편집기·복사 과정에서 깨지기 쉬워 이스케이프로 적는다.
-# 이스케이프는 큰따옴표 문자열에서만 해석된다. 작은따옴표로 쓰면 문자 그대로 나온다.
-symbol = "\ue0a0 "
+symbol = "\U0001F33F "     # 브랜치
 style = "bold purple"
 
+[git_state]
+# rebase, merge 등이 진행 중일 때만 나온다. 몇 번째 단계인지도 함께 보여준다.
+format = '\([$state( $progress_current/$progress_total)]($style)\) '
+style = "bold red"
+rebase = "\U0001F501 REBASE"
+merge  = "\U0001F500 MERGE"
+
 [git_status]
+# 기본값은 $ ? ! + 같은 기호라 뜻을 외워야 한다. 이모지로 바꾸면 바로 읽힌다.
+# ${count}는 해당 상태의 파일 개수다. 개수가 필요 없으면 지우면 된다.
 style = "bold yellow"
+format = '([$all_status$ahead_behind]($style) )'
+modified   = "\U0000270F\U0000FE0F${count}"   # 수정됨
+staged     = "\U00002705${count}"             # staged
+untracked  = "\U0001F195${count}"             # 추적 안 됨
+deleted    = "\U0000274C${count}"             # 삭제됨
+renamed    = "\U0001F504${count}"             # 이름 바뀜
+stashed    = "\U0001F4E6${count}"             # stash 있음
+conflicted = "\U0001F4A5"                     # 충돌
+ahead      = "\U00002B06\U0000FE0F${count}"   # 원격보다 앞섬
+behind     = "\U00002B07\U0000FE0F${count}"   # 원격보다 뒤처짐
+diverged   = "\U0001F500"                     # 갈라짐
+
+[nodejs]
+# package.json이나 .js 파일이 있는 디렉토리에서만 나온다.
+symbol = "\U0001F49A "
+format = "[$symbol($version )]($style)"
+style = "bold green"
 
 [cmd_duration]
 min_time = 2000            # 2초 이상 걸린 명령만 소요 시간 표시
-format = "took [$duration]($style) "
+format = "\U000023F1\U0000FE0F [$duration]($style) "
 style = "bold yellow"
 
 [character]
-success_symbol = "[\u279c](bold green)"
-error_symbol = "[\u279c](bold red)"
+success_symbol = "[\U0000279C](bold green)"
+error_symbol = "[\U0000279C](bold red)"
 TOML
 ok "$STARSHIP_TOML"
 
