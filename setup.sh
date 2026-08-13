@@ -44,6 +44,8 @@ usage() {
   --no-cli        현대식 CLI 도구(zoxide, eza, bat, ripgrep) 설치를 건너뛴다
   --font          Nerd Font를 무조건 설치한다 (자동 판단을 무시)
   --no-font       Nerd Font를 설치하지 않는다
+  --terminal      Terminal.app 폰트·프로파일을 무조건 설정한다
+                  (다른 터미널에서 실행하면서 Terminal.app을 준비할 때)
   --no-terminal   Terminal.app 폰트·프로파일 설정을 건드리지 않는다
   --font-size N   Terminal.app 폰트 크기 (기본 13)
   -h, --help      이 도움말
@@ -64,6 +66,7 @@ while [[ $# -gt 0 ]]; do
     --no-cli)      WITH_CLI=0; shift ;;
     --font)        WITH_FONT=1; shift ;;
     --no-font)     WITH_FONT=0; shift ;;
+    --terminal)    WITH_TERMINAL=1; shift ;;
     --no-terminal) WITH_TERMINAL=0; shift ;;
     --font-size)
       FONT_SIZE="${2:-}"
@@ -96,9 +99,14 @@ case "$TERM_APP" in
 esac
 
 # 자동 판단 확정 (명시적 플래그가 있으면 그대로 둔다)
-[[ "$WITH_FONT" == auto ]] && { (( FONT_BUNDLED )) && WITH_FONT=0 || WITH_FONT=1; }
 [[ "$WITH_TERMINAL" == auto ]] \
   && { [[ "$TERM_APP" == "Apple_Terminal" ]] && WITH_TERMINAL=1 || WITH_TERMINAL=0; }
+
+# Terminal.app을 설정하기로 했다면 폰트도 있어야 한다.
+# (Ghostty에서 --terminal로 실행하는 경우처럼, 지금 터미널에 폰트가 내장돼 있어도 필요하다)
+if [[ "$WITH_FONT" == auto ]]; then
+  if (( WITH_TERMINAL )) || ! (( FONT_BUNDLED )); then WITH_FONT=1; else WITH_FONT=0; fi
+fi
 
 # ── 1. Homebrew ───────────────────────────────────────────────────────────────
 step "Homebrew 확인"

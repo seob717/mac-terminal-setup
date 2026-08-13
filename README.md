@@ -55,9 +55,12 @@ Ghostty는 1.2.0부터 `Symbols Nerd Font`를 바이너리에 내장해서 폰�
 ./setup.sh --no-cli        # CLI 도구 없이 코어만
 ./setup.sh --no-font       # Nerd Font 설치 안 함
 ./setup.sh --font          # 자동 판단 무시하고 무조건 설치
+./setup.sh --terminal      # Terminal.app을 무조건 설정 (폰트도 함께 설치)
 ./setup.sh --no-terminal   # Terminal.app 설정 건드리지 않음
 ./setup.sh --font-size 14  # Terminal.app 폰트 크기 (기본 13)
 ```
+
+`--terminal`은 다른 터미널을 쓰면서 Terminal.app을 미리 준비해둘 때 쓴다. 예를 들어 Ghostty에서 실행해도 Terminal.app의 모든 프로파일에 Nerd Font가 적용된다.
 
 ## 기존 환경에서 갈아타기
 
