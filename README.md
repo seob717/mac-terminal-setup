@@ -1,10 +1,25 @@
 # macOS 터미널 셋업
 
-새 맥에서 명령 한 번으로 zsh 환경을 갖춘다.
+새 맥에서 명령 한 번으로 zsh 환경을 갖춘다. clone 없이 바로 실행할 수 있다.
 
 ```bash
-./setup.sh
+bash -c "$(curl -fsSL https://raw.githubusercontent.com/seob717/mac-terminal-setup/main/setup.sh)"
 exec zsh
+```
+
+옵션은 `--` 뒤에 붙인다.
+
+```bash
+bash -c "$(curl -fsSL .../setup.sh)" -- --no-cli
+```
+
+> `curl ... | bash` 대신 `bash -c "$(curl ...)"` 를 쓴다. 파이프로 넘기면 stdin이 스크립트로 채워져서, Homebrew 설치 중 비밀번호를 물어볼 때 입력을 받지 못한다.
+
+clone해서 쓰려면:
+
+```bash
+git clone https://github.com/seob717/mac-terminal-setup.git
+cd mac-terminal-setup && ./setup.sh
 ```
 
 확인 기준: macOS 26 Tahoe · Homebrew 6 · Starship 1.26 · Ghostty 1.3 (2026-08)
@@ -51,6 +66,14 @@ Ghostty는 1.2.0부터 `Symbols Nerd Font`를 바이너리에 내장해서 폰�
 ```bash
 ./migrate.sh            # 미리보기 (파일을 바꾸지 않는다)
 ./migrate.sh --apply    # 적용
+```
+
+curl로도 같다.
+
+```bash
+RAW=https://raw.githubusercontent.com/seob717/mac-terminal-setup/main
+bash -c "$(curl -fsSL $RAW/migrate.sh)"              # 미리보기
+bash -c "$(curl -fsSL $RAW/migrate.sh)" -- --apply   # 적용
 ```
 
 정리 대상은 `ZSH_THEME`, 중복된 플러그인 `source` 줄, agnoster 전용 `prompt_context()`, 그리고 autojump(이력을 zoxide로 가져온 뒤 플러그인 목록에서 제외).
