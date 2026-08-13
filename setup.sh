@@ -214,19 +214,20 @@ rebase = "REBASE"
 merge  = "MERGE"
 
 [git_status]
+# 상태마다 색을 따로 준다. 색은 [글자](스타일) 형식으로 각 항목 안에 넣는다.
+# 이렇게 하면 바깥 format에서 style을 한 번에 씌우지 않으므로 format에 ($style)이 없다.
 # ${count}는 해당 상태의 파일 개수다. 개수가 필요 없으면 지우면 된다.
-style = "bold yellow"
-format = '([$all_status$ahead_behind]($style))'
-modified   = "modified:${count} "
-staged     = "staged:${count} "
-untracked  = "new:${count} "
-deleted    = "deleted:${count} "
-renamed    = "renamed:${count} "
-stashed    = "stashed:${count} "
-conflicted = "conflict "
-ahead      = "ahead:${count} "
-behind     = "behind:${count} "
-diverged   = "diverged "
+format = '($all_status$ahead_behind)'
+modified   = "[modified:${count} ](bold yellow)"   # 변경됨
+staged     = "[staged:${count} ](bold green)"      # 커밋 준비됨
+untracked  = "[new:${count} ](bold cyan)"          # 새로 생긴 파일
+deleted    = "[deleted:${count} ](bold red)"       # 삭제됨
+renamed    = "[renamed:${count} ](bold purple)"    # 이름 바뀜
+stashed    = "[stashed:${count} ](bold blue)"      # stash 보관 중
+conflicted = "[conflict ](bold red)"               # 충돌 — 가장 먼저 처리할 것
+ahead      = "[ahead:${count} ](bold green)"       # 원격보다 앞섬
+behind     = "[behind:${count} ](bold red)"        # 원격보다 뒤처짐
+diverged   = "[diverged ](bold red)"               # 갈라짐
 
 [nodejs]
 # package.json이나 .js 파일이 있는 디렉토리에서만 나온다.
