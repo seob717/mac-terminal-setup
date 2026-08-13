@@ -5,14 +5,16 @@
 #   ./uninstall.sh            무엇을 지울지 보여주기만 한다 (기본값)
 #   ./uninstall.sh --apply    실제로 지운다
 #
-# .zshrc의 관리 블록과 starship 설정을 지우고, migrate.sh가 주석 처리한 줄을
-# 되살린다. brew 패키지와 폰트는 다른 작업에서도 쓸 수 있으므로 기본으로는
-# 건드리지 않는다.
+# .zshrc의 관리 블록과 starship·Ghostty 설정을 지우고, migrate.sh가 주석 처리한
+# 줄을 되살린다. brew 패키지와 폰트, Ghostty 앱 자체는 다른 작업에서도 쓸 수 있으므로
+# 기본으로는 건드리지 않는다.
 
 set -euo pipefail
 
 readonly ZSHRC="$HOME/.zshrc"
 readonly STARSHIP_TOML="$HOME/.config/starship.toml"
+readonly GHOSTTY_CONFIG="$HOME/.config/ghostty/config"
+readonly GHOSTTY_APP="/Applications/Ghostty.app"
 readonly MARK_START="# >>> terminal-setup >>>"
 readonly MARK_END="# <<< terminal-setup <<<"
 readonly TAG="# [migrated] "
@@ -22,6 +24,7 @@ readonly PACKAGES=(starship zsh-autosuggestions zsh-syntax-highlighting zoxide e
 APPLY=0
 WITH_PACKAGES=0
 WITH_FONT=0
+WITH_GHOSTTY=0
 FOUND=0
 
 if [[ -t 1 ]]; then
@@ -50,13 +53,15 @@ setup.sh와 migrate.sh가 바꾼 것을 되돌린다.
                 starship, zsh-autosuggestions, zsh-syntax-highlighting,
                 zoxide, eza, bat, ripgrep
   --font        Hack Nerd Font도 지운다
-  --all         --packages --font 을 함께 켠다
+  --ghostty     Ghostty 앱도 지운다 (설정 파일은 옵션 없이도 지운다)
+  --all         --packages --font --ghostty 를 함께 켠다
   -h, --help    이 도움말
 
 기본으로 지우는 것:
   1. .zshrc의 terminal-setup 블록
   2. migrate.sh가 붙인 # [migrated] 주석 (원래 줄로 되살린다)
   3. ~/.config/starship.toml
+  4. ~/.config/ghostty/config
 USAGE
 }
 
@@ -65,7 +70,8 @@ while [[ $# -gt 0 ]]; do
     --apply)    APPLY=1; shift ;;
     --packages) WITH_PACKAGES=1; shift ;;
     --font)     WITH_FONT=1; shift ;;
-    --all)      WITH_PACKAGES=1; WITH_FONT=1; shift ;;
+    --ghostty)  WITH_GHOSTTY=1; shift ;;
+    --all)      WITH_PACKAGES=1; WITH_FONT=1; WITH_GHOSTTY=1; shift ;;
     -h|--help)  usage; exit 0 ;;
     *)          die "알 수 없는 옵션: $1 (--help 참고)" ;;
   esac
@@ -149,8 +155,45 @@ else
   skip "설정 파일 없음"
 fi
 
-# ── 4. brew 패키지 (선택) ─────────────────────────────────────────────────────
-step "4. brew 패키지"
+# ── 4. Ghostty 설정 ───────────────────────────────────────────────────────────
+# 설정 파일은 setup.sh가 만든 것이므로 기본으로 지운다.
+# 앱 자체는 --ghostty를 줬을 때만 지운다. 지금 Ghostty에서 실행 중이라면
+# 쓰고 있는 앱을 지우는 셈이라 건너뛴다.
+step "4. Ghostty 설정 파일"
+if [[ -f "$GHOSTTY_CONFIG" ]]; then
+  FOUND=1
+  if (( APPLY )); then
+    mv "$GHOSTTY_CONFIG" "$GHOSTTY_CONFIG.removed.$STAMP"
+    ok "$GHOSTTY_CONFIG.removed.$STAMP 로 옮겼다"
+  else
+    warn "$GHOSTTY_CONFIG 을 제거한다 (.removed.$STAMP 로 남긴다)"
+  fi
+else
+  skip "설정 파일 없음"
+fi
+
+if (( WITH_GHOSTTY )); then
+  if [[ ! -d "$GHOSTTY_APP" ]]; then
+    skip "Ghostty 앱은 설치돼 있지 않음"
+  elif [[ "${TERM_PROGRAM:-}" == "ghostty" ]]; then
+    warn "지금 Ghostty에서 실행 중이라 앱은 그대로 둔다"
+    warn "  다른 터미널에서 'brew uninstall --cask ghostty'를 실행할 것"
+  else
+    FOUND=1
+    if (( APPLY )); then
+      brew uninstall --cask ghostty >/dev/null 2>&1 \
+        && ok "Ghostty 앱을 제거했다" \
+        || warn "Ghostty 제거에 실패했다 (brew로 설치한 앱이 아닐 수 있다)"
+    else
+      warn "Ghostty 앱을 제거한다"
+    fi
+  fi
+else
+  skip "Ghostty 앱은 유지한다 (--ghostty로 제거 가능)"
+fi
+
+# ── 5. brew 패키지 (선택) ─────────────────────────────────────────────────────
+step "5. brew 패키지"
 if (( WITH_PACKAGES )); then
   if ! command -v brew >/dev/null 2>&1; then
     warn "brew를 찾을 수 없다"
@@ -178,8 +221,8 @@ else
   skip "brew 패키지는 유지한다 (--packages로 제거 가능)"
 fi
 
-# ── 5. 폰트 (선택) ────────────────────────────────────────────────────────────
-step "5. Hack Nerd Font"
+# ── 6. 폰트 (선택) ────────────────────────────────────────────────────────────
+step "6. Hack Nerd Font"
 if (( WITH_FONT )); then
   if command -v brew >/dev/null 2>&1 && brew list --cask --versions font-hack-nerd-font >/dev/null 2>&1; then
     FOUND=1
@@ -222,7 +265,7 @@ else
 
     ./uninstall.sh --apply
 
-brew 패키지와 폰트까지 모두 지우려면:
+brew 패키지와 폰트, Ghostty까지 모두 지우려면:
 
     ./uninstall.sh --apply --all
 EOF

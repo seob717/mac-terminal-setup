@@ -4,6 +4,7 @@
 
 설치가 끝나면 다음과 같이 달라집니다.
 
+- 빠르고 보기 좋은 터미널 앱(Ghostty)이 어두운 Catppuccin Mocha 테마로 설치됩니다.
 - 현재 폴더와 Git 상태가 프롬프트에 보기 좋게 표시됩니다.
 - 전에 입력했던 명령이 자동으로 제안됩니다.
 - 실행할 수 있는 명령과 오타가 색으로 구분됩니다.
@@ -21,6 +22,8 @@
 `⌘ Command + Space`를 누르고 `터미널`을 검색한 다음 **터미널.app**을 실행합니다.
 
 Ghostty, iTerm2처럼 이미 사용 중인 터미널 앱이 있다면 그 앱에서 진행해도 됩니다.
+
+설치 과정에서 Ghostty 터미널 앱을 함께 설치하므로 미리 준비할 필요는 없습니다.
 
 ### 2. 설치 명령 실행하기
 
@@ -57,6 +60,18 @@ echo -e "\ue0a0  \uf07c  \uf09b  \ue702  \ue7a8  \uf308"
 ```
 
 아이콘 6개가 보이면 설치가 끝났습니다. 아이콘 대신 `□`나 `?`가 보인다면 [아이콘이 네모로 보여요](#아이콘이-네모로-보여요)를 확인하세요.
+
+### 5. Ghostty 열어 보기
+
+`⌘ Command + Space`를 누르고 `Ghostty`를 검색해 실행합니다. 어두운 Catppuccin Mocha 색으로 창이 열리고, 앞에서 만든 프롬프트가 그대로 나타납니다.
+
+Ghostty는 설정 화면 대신 파일 하나로 설정을 관리합니다. 색이나 글자 크기를 바꾸고 싶다면 `~/.config/ghostty/config` 파일을 열어 고친 뒤, Ghostty 창에서 `⌘⇧,`를 눌러 다시 읽어 들이면 됩니다.
+
+다른 테마 이름은 아래 명령으로 볼 수 있습니다.
+
+```bash
+/Applications/Ghostty.app/Contents/MacOS/ghostty +list-themes
+```
 
 ## 설치 후 하나씩 사용해 보기
 
@@ -137,6 +152,7 @@ rg "terminal-setup" ~/.zshrc
 | **eza** | 기본 `ls`보다 보기 좋은 파일 목록 | `ls` 또는 `ll` 실행 |
 | **bat** | 기본 `cat`보다 읽기 좋은 파일 내용 | `cat 파일경로` 실행 |
 | **ripgrep** | 파일과 폴더에서 빠르게 글자 검색 | `rg "찾을말" 경로` 실행 |
+| **Ghostty** | 빠르고 가벼운 터미널 앱. Catppuccin Mocha 테마로 설정됨 | 터미널.app 대신 사용. 설정은 `~/.config/ghostty/config` |
 | **Hack Nerd Font** | 터미널용 아이콘이 포함된 글꼴 | 필요한 터미널에서만 자동 설치 |
 
 ### Starship에 표시되는 Git 상태
@@ -224,14 +240,14 @@ bash -c "$(curl -fsSL https://raw.githubusercontent.com/seob717/mac-terminal-set
 bash -c "$(curl -fsSL https://raw.githubusercontent.com/seob717/mac-terminal-setup/main/uninstall.sh)"
 ```
 
-내용을 확인한 뒤 이 프로젝트가 추가한 `.zshrc` 설정과 Starship 설정을 제거합니다.
+내용을 확인한 뒤 이 프로젝트가 추가한 `.zshrc` 설정과 Starship·Ghostty 설정 파일을 제거합니다.
 
 ```bash
 bash -c "$(curl -fsSL https://raw.githubusercontent.com/seob717/mac-terminal-setup/main/uninstall.sh)" -- --apply
 exec zsh
 ```
 
-Homebrew로 설치한 도구와 폰트는 다른 프로그램에서도 사용할 수 있으므로 기본적으로 남겨 둡니다. 그것까지 모두 제거하려면 다음 명령을 사용합니다.
+Homebrew로 설치한 도구와 폰트, Ghostty 앱 자체는 다른 작업에도 쓸 수 있으므로 기본적으로 남겨 둡니다. 그것까지 모두 제거하려면 다음 명령을 사용합니다. (Ghostty 안에서 실행하면 사용 중인 앱은 지우지 않고 넘어갑니다.)
 
 ```bash
 bash -c "$(curl -fsSL https://raw.githubusercontent.com/seob717/mac-terminal-setup/main/uninstall.sh)" -- --apply --all
@@ -246,6 +262,7 @@ bash -c "$(curl -fsSL https://raw.githubusercontent.com/seob717/mac-terminal-set
 | 옵션 | 용도 |
 |---|---|
 | `--no-cli` | zoxide, eza, bat, ripgrep을 설치하지 않음 |
+| `--no-ghostty` | Ghostty 설치와 테마 설정을 하지 않음 |
 | `--no-font` | Hack Nerd Font를 설치하지 않음 |
 | `--font` | 터미널 자동 판단과 관계없이 폰트를 설치함 |
 | `--terminal` | 현재 다른 앱을 사용 중이어도 터미널.app의 폰트와 프로파일을 설정함 |

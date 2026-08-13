@@ -2,7 +2,7 @@
 #
 # macOS 터미널 원클릭 셋업
 #
-#   Homebrew → Nerd Font → 터미널 폰트 적용 → Starship → zsh 플러그인 → CLI 도구
+#   Homebrew → Ghostty → Nerd Font → 터미널 폰트 적용 → Starship → zsh 플러그인 → CLI 도구
 #
 # 기존 설정은 건드리지 않는다. .zshrc는 마커 블록 안쪽만 관리하므로
 # 여러 번 실행해도 중복되지 않고, 실행 전 항상 백업을 남긴다.
@@ -15,11 +15,15 @@ readonly MARK_START="# >>> terminal-setup >>>"
 readonly MARK_END="# <<< terminal-setup <<<"
 readonly ZSHRC="$HOME/.zshrc"
 readonly STARSHIP_TOML="$HOME/.config/starship.toml"
+readonly GHOSTTY_CONFIG="$HOME/.config/ghostty/config"
+readonly GHOSTTY_APP="/Applications/Ghostty.app"
+readonly GHOSTTY_THEME="catppuccin-mocha"
 readonly STAMP="$(date +%Y%m%d-%H%M%S)"
 
 WITH_CLI=1
 WITH_FONT=auto      # auto | 1 | 0
 WITH_TERMINAL=auto  # auto | 1 | 0
+WITH_GHOSTTY=1
 FONT_SIZE=13
 
 # ── 로그 ──────────────────────────────────────────────────────────────────────
@@ -42,6 +46,7 @@ usage() {
 
 옵션:
   --no-cli        현대식 CLI 도구(zoxide, eza, bat, ripgrep) 설치를 건너뛴다
+  --no-ghostty    Ghostty 터미널 설치와 테마 설정을 건너뛴다
   --font          Nerd Font를 무조건 설치한다 (자동 판단을 무시)
   --no-font       Nerd Font를 설치하지 않는다
   --terminal      Terminal.app 폰트·프로파일을 무조건 설정한다
@@ -56,6 +61,7 @@ Ghostty·WezTerm·kitty는 Nerd Font를 내장하고 있어 폰트 설치를 건
 설치 내용:
   Homebrew, Starship(+ starship.toml),
   zsh-autosuggestions, zsh-syntax-highlighting
+  [기본 포함] Ghostty(+ Catppuccin Mocha 테마)
   [조건부] Hack Nerd Font
   [기본 포함] zoxide, eza, bat, ripgrep
 USAGE
@@ -64,6 +70,7 @@ USAGE
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --no-cli)      WITH_CLI=0; shift ;;
+    --no-ghostty)  WITH_GHOSTTY=0; shift ;;
     --font)        WITH_FONT=1; shift ;;
     --no-font)     WITH_FONT=0; shift ;;
     --terminal)    WITH_TERMINAL=1; shift ;;
@@ -135,7 +142,65 @@ brew_formula() {
   fi
 }
 
-# ── 2. Nerd Font ──────────────────────────────────────────────────────────────
+# ── 2. Ghostty ────────────────────────────────────────────────────────────────
+# 터미널 앱 자체를 Ghostty로 맞춘다. GPU 렌더링에 설정이 텍스트 파일 하나라,
+# Terminal.app처럼 AppleScript로 GUI를 건드릴 필요가 없다.
+#
+# 이미 앱이 있으면(brew가 아닌 방법으로 직접 받아둔 경우 포함) 설치를 건너뛴다.
+# cask로 다시 깔면 기존 앱을 덮어쓰기 때문이다.
+if (( WITH_GHOSTTY )); then
+  step "Ghostty 설치"
+  if [[ -d "$GHOSTTY_APP" ]]; then
+    skip "Ghostty (이미 설치됨 — $GHOSTTY_APP)"
+  elif brew list --cask --versions ghostty >/dev/null 2>&1; then
+    skip "ghostty (이미 설치됨)"
+  else
+    brew install --cask ghostty >/dev/null \
+      || die "Ghostty 설치 실패. 'brew install --cask ghostty'를 직접 실행해보라."
+    ok "ghostty 설치"
+  fi
+
+  # 설정 파일. Ghostty는 이 파일 하나만 읽으므로 GUI 설정 화면이 따로 없다.
+  step "Ghostty 설정 (Catppuccin Mocha)"
+  mkdir -p "$(dirname "$GHOSTTY_CONFIG")"
+  if [[ -f "$GHOSTTY_CONFIG" ]]; then
+    cp "$GHOSTTY_CONFIG" "$GHOSTTY_CONFIG.backup.$STAMP"
+    warn "기존 설정을 $GHOSTTY_CONFIG.backup.$STAMP 로 백업했다."
+  fi
+  cat > "$GHOSTTY_CONFIG" <<CONF
+# 이 파일은 setup.sh가 만든다. 항목 이름과 기본값은
+# 'ghostty +show-config --default --docs' 로 전부 확인할 수 있다.
+
+# Catppuccin Mocha. Ghostty에 내장된 테마라 따로 받을 필요가 없다.
+# 다른 테마 목록은 'ghostty +list-themes' 로 본다.
+theme = $GHOSTTY_THEME
+
+# 폰트는 일부러 비워둔다. Ghostty는 JetBrains Mono와 Symbols Nerd Font를
+# 바이너리에 담고 있어서, 지정하지 않아야 아이콘까지 깨지지 않고 나온다.
+font-size = $FONT_SIZE
+
+# 창 가장자리 여백 (픽셀)
+window-padding-x = 8
+window-padding-y = 6
+CONF
+  ok "$GHOSTTY_CONFIG"
+
+  # 테마 이름이 틀리면 Ghostty는 에러 없이 기본 테마로 뜬다. 조용한 실패라
+  # 여기서 확인해 둔다. 파이프와 </dev/null로 대화형 테마 브라우저가 뜨는 것을 막는다.
+  GHOSTTY_BIN="$GHOSTTY_APP/Contents/MacOS/ghostty"
+  if [[ -x "$GHOSTTY_BIN" ]]; then
+    if "$GHOSTTY_BIN" +list-themes </dev/null 2>/dev/null | grep -qi "$GHOSTTY_THEME"; then
+      ok "테마 '$GHOSTTY_THEME' 확인"
+    else
+      warn "내장 테마 목록에서 '$GHOSTTY_THEME'을 찾지 못했다."
+      warn "  'ghostty +list-themes'로 이름을 확인한 뒤 $GHOSTTY_CONFIG 를 고칠 것."
+    fi
+  fi
+else
+  step "Ghostty 설치 (--no-ghostty로 건너뜀)"
+fi
+
+# ── 3. Nerd Font ──────────────────────────────────────────────────────────────
 # 프롬프트의 git 브랜치 아이콘, eza의 파일 타입 아이콘을 그리려면 필요하다.
 # 폰트 cask는 2024년에 homebrew/cask로 통합됐다. 예전 tap(homebrew/cask-fonts)은
 # 이제 실행하면 곧바로 에러를 내므로 fallback으로도 쓰면 안 된다.
@@ -152,13 +217,13 @@ else
   step "Hack Nerd Font 설치 (건너뜀 — 터미널에 내장돼 있거나 --no-font)"
 fi
 
-# ── 3. Starship + zsh 플러그인 ────────────────────────────────────────────────
+# ── 4. Starship + zsh 플러그인 ────────────────────────────────────────────────
 step "Starship과 zsh 플러그인 설치"
 brew_formula starship
 brew_formula zsh-autosuggestions
 brew_formula zsh-syntax-highlighting
 
-# ── 4. CLI 도구 ───────────────────────────────────────────────────────────────
+# ── 5. CLI 도구 ───────────────────────────────────────────────────────────────
 if (( WITH_CLI )); then
   step "현대식 CLI 도구 설치"
   brew_formula zoxide    # cd 대체: 방문 이력을 학습해 z <일부이름>으로 점프
@@ -169,7 +234,7 @@ else
   step "현대식 CLI 도구 설치 (--no-cli로 건너뜀)"
 fi
 
-# ── 5. starship.toml ──────────────────────────────────────────────────────────
+# ── 6. starship.toml ──────────────────────────────────────────────────────────
 # 디렉토리 + git + 실행 시간만 보여주는 미니멀 구성.
 step "starship 설정 파일 생성"
 mkdir -p "$(dirname "$STARSHIP_TOML")"
@@ -246,7 +311,7 @@ error_symbol = "[➜](bold red)"
 TOML
 ok "$STARSHIP_TOML"
 
-# ── 6. .zshrc ─────────────────────────────────────────────────────────────────
+# ── 7. .zshrc ─────────────────────────────────────────────────────────────────
 step ".zshrc 구성"
 
 if [[ -f "$ZSHRC" ]]; then
@@ -356,7 +421,7 @@ TAIL
 } >> "$ZSHRC"
 ok ".zshrc에 설정 블록을 추가했다"
 
-# ── 7. Terminal.app 폰트 적용 ─────────────────────────────────────────────────
+# ── 8. Terminal.app 폰트 적용 ─────────────────────────────────────────────────
 # 이 셋업에서 가장 흔한 실패 지점: 폰트를 설치해도 터미널 앱에서 지정하지 않으면
 # 아이콘이 ? 또는 □ 로 깨진다. AppleScript로 자동 적용한다.
 #
@@ -429,6 +494,25 @@ if (( WITH_TERMINAL )); then
 
 폰트는 새로 여는 창부터 확실히 반영된다. 지금 창에서 아이콘이 깨져 보이면
 ⌘N으로 새 창을 열어 확인할 것.
+EOF
+fi
+
+if (( WITH_GHOSTTY )) && [[ "$TERM_APP" != "ghostty" ]]; then
+  cat <<EOF
+
+Ghostty를 설치했다. Launchpad나 Spotlight(⌘Space)에서 'Ghostty'를 열면
+Catppuccin Mocha 테마가 적용된 창이 뜬다.
+
+테마나 폰트 크기를 바꾸려면 이 파일을 고친 뒤 Ghostty에서 ⌘⇧, 를 눌러 다시 읽는다:
+
+    $GHOSTTY_CONFIG
+EOF
+elif (( WITH_GHOSTTY )); then
+  cat <<EOF
+
+Ghostty 설정을 새로 썼다. ⌘⇧, 를 눌러 설정을 다시 읽으면 테마가 바로 반영된다:
+
+    $GHOSTTY_CONFIG
 EOF
 fi
 
