@@ -83,6 +83,20 @@ bash -c "$(curl -fsSL $RAW/migrate.sh)" -- --apply   # 적용
 
 oh-my-zsh까지 걷어내려면 `--remove-omz`를 붙인다. `gst`, `gco` 같은 git 단축 alias를 잃게 되므로 기본값은 아니다.
 
+## 되돌리기
+
+`uninstall.sh`가 `setup.sh`와 `migrate.sh`가 한 일을 되돌린다. 여기도 기본은 미리보기다.
+
+```bash
+./uninstall.sh              # 미리보기
+./uninstall.sh --apply      # .zshrc 블록, migrated 주석, starship.toml 제거
+./uninstall.sh --apply --all  # brew 패키지와 폰트까지 전부
+```
+
+`--all` 없이는 brew 패키지(`ripgrep`, `bat` 등)와 폰트를 건드리지 않는다. 다른 도구가 함께 쓰고 있을 수 있기 때문이다.
+
+`migrate.sh`가 `# [migrated]`로 주석 처리한 줄은 태그를 떼어 원래대로 되살린다. 다만 `ZSH_THEME`은 값 자체를 비우는 방식이라 원래 테마 이름을 복원할 수 없다. 백업 파일을 보고 직접 채워야 한다.
+
 ## 안전장치
 
 - `.zshrc`는 `# >>> terminal-setup >>>` 마커 블록 안쪽만 관리한다. 블록 밖의 개인 설정은 그대로 둔다.
